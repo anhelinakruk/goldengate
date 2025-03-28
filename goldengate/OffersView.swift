@@ -28,7 +28,6 @@ public struct OffersView: View {
     public var body: some View {
         NavigationView {
             VStack {
-                // Picker for selecting offer type and crypto currency
                 HStack {
                     Picker("Offer Type", selection: $selectedOfferType) {
                         Text("Buy").tag("Buy")
@@ -59,7 +58,7 @@ public struct OffersView: View {
                                 HStack {
                                     Text("Price per unit:")
                                         .fontWeight(.bold)
-                                    Text("\(offer.price) \(offer.currency)")
+                                    Text("\(offer.price, specifier: "%.2f") \(offer.currency)")
                                         .foregroundColor(.black)
                                     Spacer()
                                 }
@@ -67,7 +66,7 @@ public struct OffersView: View {
                                 HStack {
                                     Text("Available:")
                                         .fontWeight(.bold)
-                                    Text("\(offer.amount) \(offer.cryptoCurrency)")
+                                    Text("\(String(format: "%.6f", offer.amount)) \(offer.cryptoCurrency)")
                                         .foregroundColor(.black)
                                     Spacer()
                                     NavigationLink(destination: CreateTransactionView(selectedOffer: offer)) {
@@ -79,6 +78,7 @@ public struct OffersView: View {
                                             .cornerRadius(8)
                                     }
                                 }
+
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -113,13 +113,13 @@ public struct OffersView: View {
 struct Offer: Identifiable {
     let id: String
     var offerType: String
-    var price: Int128
+    var price: Double
     var currency: String
-    var amount: Int128
+    var amount: Double
     var cryptoCurrency: String
-    var fee: Int128
+    var fee: Double
     var status: String
-    var value: Int128
+    var value: Double
     var revTag: String
 }
 

@@ -6,6 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		211008CE2D97012A007CA8E6 /* ReownAppKit in Frameworks */ = {isa = PBXBuildFile; productRef = 211008CD2D97012A007CA8E6 /* ReownAppKit */; };
+		211008D02D97012A007CA8E6 /* ReownAppKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 211008CF2D97012A007CA8E6 /* ReownAppKitUI */; };
+		211008D22D97012A007CA8E6 /* ReownRouter in Frameworks */ = {isa = PBXBuildFile; productRef = 211008D12D97012A007CA8E6 /* ReownRouter */; };
+		211008D42D97012A007CA8E6 /* ReownWalletKit in Frameworks */ = {isa = PBXBuildFile; productRef = 211008D32D97012A007CA8E6 /* ReownWalletKit */; };
+		211008D62D97012A007CA8E6 /* WalletConnect in Frameworks */ = {isa = PBXBuildFile; productRef = 211008D52D97012A007CA8E6 /* WalletConnect */; };
+		211008E92D970466007CA8E6 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 211008E82D970466007CA8E6 /* Atlantis */; };
+		211008F42D97062E007CA8E6 /* Web3 in Frameworks */ = {isa = PBXBuildFile; productRef = 211008F32D97062E007CA8E6 /* Web3 */; };
+		211008F62D97062E007CA8E6 /* Web3ContractABI in Frameworks */ = {isa = PBXBuildFile; productRef = 211008F52D97062E007CA8E6 /* Web3ContractABI */; };
+		211008F82D97062E007CA8E6 /* Web3PromiseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 211008F72D97062E007CA8E6 /* Web3PromiseKit */; };
+		211008FB2D970691007CA8E6 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 211008FA2D970691007CA8E6 /* Starscream */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		2170DA5F2D953E7800C004C9 /* goldengate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = goldengate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +36,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				211008CE2D97012A007CA8E6 /* ReownAppKit in Frameworks */,
+				211008D62D97012A007CA8E6 /* WalletConnect in Frameworks */,
+				211008F62D97062E007CA8E6 /* Web3ContractABI in Frameworks */,
+				211008FB2D970691007CA8E6 /* Starscream in Frameworks */,
+				211008F42D97062E007CA8E6 /* Web3 in Frameworks */,
+				211008F82D97062E007CA8E6 /* Web3PromiseKit in Frameworks */,
+				211008D02D97012A007CA8E6 /* ReownAppKitUI in Frameworks */,
+				211008D42D97012A007CA8E6 /* ReownWalletKit in Frameworks */,
+				211008E92D970466007CA8E6 /* Atlantis in Frameworks */,
+				211008D22D97012A007CA8E6 /* ReownRouter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +88,16 @@
 			);
 			name = goldengate;
 			packageProductDependencies = (
+				211008CD2D97012A007CA8E6 /* ReownAppKit */,
+				211008CF2D97012A007CA8E6 /* ReownAppKitUI */,
+				211008D12D97012A007CA8E6 /* ReownRouter */,
+				211008D32D97012A007CA8E6 /* ReownWalletKit */,
+				211008D52D97012A007CA8E6 /* WalletConnect */,
+				211008E82D970466007CA8E6 /* Atlantis */,
+				211008F32D97062E007CA8E6 /* Web3 */,
+				211008F52D97062E007CA8E6 /* Web3ContractABI */,
+				211008F72D97062E007CA8E6 /* Web3PromiseKit */,
+				211008FA2D970691007CA8E6 /* Starscream */,
 			);
 			productName = goldengate;
 			productReference = 2170DA5F2D953E7800C004C9 /* goldengate.app */;
@@ -94,6 +127,12 @@
 			);
 			mainGroup = 2170DA562D953E7800C004C9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */,
+				211008E72D970466007CA8E6 /* XCRemoteSwiftPackageReference "atlantis" */,
+				211008F22D97062E007CA8E6 /* XCRemoteSwiftPackageReference "Web3.swift" */,
+				211008F92D970691007CA8E6 /* XCRemoteSwiftPackageReference "Starscream" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2170DA602D953E7800C004C9 /* Products */;
 			projectDirPath = "";
@@ -249,6 +288,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = goldengate/goldengate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"goldengate/Preview Content\"";
@@ -278,6 +318,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = goldengate/goldengate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"goldengate/Preview Content\"";
@@ -324,6 +365,94 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/reown-com/reown-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.2;
+			};
+		};
+		211008E72D970466007CA8E6 /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.27.0;
+			};
+		};
+		211008F22D97062E007CA8E6 /* XCRemoteSwiftPackageReference "Web3.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Boilertalk/Web3.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.0;
+			};
+		};
+		211008F92D970691007CA8E6 /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream";
+			requirement = {
+				kind = exactVersion;
+				version = 3.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		211008CD2D97012A007CA8E6 /* ReownAppKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = ReownAppKit;
+		};
+		211008CF2D97012A007CA8E6 /* ReownAppKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = ReownAppKitUI;
+		};
+		211008D12D97012A007CA8E6 /* ReownRouter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = ReownRouter;
+		};
+		211008D32D97012A007CA8E6 /* ReownWalletKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = ReownWalletKit;
+		};
+		211008D52D97012A007CA8E6 /* WalletConnect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008CC2D97012A007CA8E6 /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = WalletConnect;
+		};
+		211008E82D970466007CA8E6 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008E72D970466007CA8E6 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
+		};
+		211008F32D97062E007CA8E6 /* Web3 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008F22D97062E007CA8E6 /* XCRemoteSwiftPackageReference "Web3.swift" */;
+			productName = Web3;
+		};
+		211008F52D97062E007CA8E6 /* Web3ContractABI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008F22D97062E007CA8E6 /* XCRemoteSwiftPackageReference "Web3.swift" */;
+			productName = Web3ContractABI;
+		};
+		211008F72D97062E007CA8E6 /* Web3PromiseKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008F22D97062E007CA8E6 /* XCRemoteSwiftPackageReference "Web3.swift" */;
+			productName = Web3PromiseKit;
+		};
+		211008FA2D970691007CA8E6 /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 211008F92D970691007CA8E6 /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2170DA572D953E7800C004C9 /* Project object */;
 }
