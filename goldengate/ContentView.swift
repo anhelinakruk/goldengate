@@ -1,21 +1,21 @@
-//
-//  ContentView.swift
-//  goldengate
-//
-//  Created by Anhelina Kruk on 27/03/2025.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selection: Int = 0
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView(selection: $selection) {
+            Tab("Offers", systemImage: "receipt", value: 0) {
+                OffersView()
+            }
+
+            Tab("Account", systemImage: "person.crop.circle", value: 1) {
+                AccountView()
+            }
+
+            Tab("Revolut", systemImage: "wallet.bifold.fill", value: 2) {
+                RevolutView()
+            }
         }
-        .padding()
     }
 }
 
