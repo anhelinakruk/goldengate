@@ -1,29 +1,12 @@
-//
-//  OffersView.swift
-//  goldengate
-//
-//  Created by Anhelina Kruk on 27/03/2025.
-//
-
 import SwiftUI
 
 public struct OffersView: View {
-    let offers: [Offer] = [
-        Offer(id: "1", offerType: "Buy", price: 1000, currency: "USD", amount: 1, cryptoCurrency: "BTC", fee: 50, status: "Active", value: 950, revTag: "Rev1"),
-        Offer(id: "1", offerType: "Buy", price: 1000, currency: "USD", amount: 1, cryptoCurrency: "BTC", fee: 50, status: "Active", value: 950, revTag: "Rev1"),
-        Offer(id: "1", offerType: "Buy", price: 1000, currency: "USD", amount: 1, cryptoCurrency: "BTC", fee: 50, status: "Active", value: 950, revTag: "Rev1"),
-        Offer(id: "1", offerType: "Buy", price: 1000, currency: "USD", amount: 1, cryptoCurrency: "BTC", fee: 50, status: "Active", value: 950, revTag: "Rev1"),
-        Offer(id: "1", offerType: "Buy", price: 1000, currency: "USD", amount: 1, cryptoCurrency: "BTC", fee: 50, status: "Active", value: 950, revTag: "Rev1"),
-        Offer(id: "2", offerType: "Sell", price: 1200, currency: "USD", amount: 2, cryptoCurrency: "ETH", fee: 60, status: "Active", value: 1140, revTag: "Rev2"),
-        Offer(id: "3", offerType: "Buy", price: 800, currency: "USD", amount: 5, cryptoCurrency: "LTC", fee: 40, status: "Inactive", value: 760, revTag: "Rev3")
-    ]
-    
+    @State private var offers: [Offer] = [] // Tablica ofert
     @State private var selectedOffer: Offer? = nil
-    
     @State private var selectedOfferType: String = "Buy"
-    @State private var selectedCrypto: String = "BTC"
+    @State private var selectedCrypto: String = "USDT"
     
-    let cryptoOptions = ["BTC", "ETH", "LTC", "XRP"]
+    let cryptoOptions = ["USDT", "BTC", "ETH"]
     
     public var body: some View {
         NavigationView {
@@ -58,7 +41,7 @@ public struct OffersView: View {
                                 HStack {
                                     Text("Price per unit:")
                                         .fontWeight(.bold)
-                                    Text("\(offer.price, specifier: "%.2f") \(offer.currency)")
+                                    Text("\(offer.pricePerUnit, specifier: "%.2f") \(offer.currency)")
                                         .foregroundColor(.black)
                                     Spacer()
                                 }
@@ -66,7 +49,7 @@ public struct OffersView: View {
                                 HStack {
                                     Text("Available:")
                                         .fontWeight(.bold)
-                                    Text("\(String(format: "%.6f", offer.amount)) \(offer.cryptoCurrency)")
+                                    Text("\(offer.amount, specifier: "%.6f") \(offer.cryptoCurrency)")
                                         .foregroundColor(.black)
                                     Spacer()
                                     NavigationLink(destination: CreateTransactionView(selectedOffer: offer)) {
@@ -78,7 +61,6 @@ public struct OffersView: View {
                                             .cornerRadius(8)
                                     }
                                 }
-
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -106,14 +88,65 @@ public struct OffersView: View {
             }
             .navigationBarTitle("Offers")
             .background(Color.gray.opacity(0.1))
+            .onAppear {
+                fetchOffers()
+            }
         }
+    }
+    
+    func fetchOffers() {
+        guard let url = URL(string: "http://localhost:3000/public/offers") else {
+            print("Invalid URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error fetching offers: \(error.localizedDescription)")
+                return
+            }
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            do {
+                let decoder = JSONDecoder()
+                let offersResponse = try decoder.decode([ResponseOffer].self, from: data)
+                
+                let processedOffers = offersResponse.map { responseOffer in
+                    Offer(
+                        id: responseOffer.id,
+                        offerType: responseOffer.offerType,
+                        pricePerUnit: Double(responseOffer.pricePerUnit) / pow(10, 2),
+                        currency: responseOffer.currency,
+                        amount: Double(responseOffer.amount) / pow(10, 6),
+                        cryptoCurrency: responseOffer.cryptoType,
+                        fee: Double(responseOffer.fee) / pow(10, 6),
+                        status: responseOffer.status,
+                        value: Double(responseOffer.value) / pow(10, 6),
+                        revTag: responseOffer.revTag
+                    )
+                }
+
+                DispatchQueue.main.async {
+                    self.offers = processedOffers
+                }
+            } catch {
+                print("Error decoding response: \(error.localizedDescription)")
+            }
+        }.resume()
     }
 }
 
 struct Offer: Identifiable {
     let id: String
     var offerType: String
-    var price: Double
+    var pricePerUnit: Double
     var currency: String
     var amount: Double
     var cryptoCurrency: String
@@ -122,7 +155,6 @@ struct Offer: Identifiable {
     var value: Double
     var revTag: String
 }
-
 
 #Preview {
     OffersView()

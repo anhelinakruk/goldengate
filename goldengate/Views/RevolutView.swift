@@ -110,6 +110,7 @@ class RevolutViewController: UIViewController, WKNavigationDelegate {
             print("Response data: \(responseString)")
         }
     }
+    
 }
 
 // MARK: - WebViewControllerRepresentable

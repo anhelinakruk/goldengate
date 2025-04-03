@@ -14,7 +14,7 @@ public struct CreateTransactionView: View {
                 Text("Price per unit:")
                     .fontWeight(.bold)
                 Spacer()
-                Text("\(selectedOffer.price, specifier: "%.2f") \(selectedOffer.currency)")
+                Text("\(selectedOffer.pricePerUnit, specifier: "%.2f") \(selectedOffer.currency)")
                     .foregroundColor(.black)
             }
             .padding(.bottom, 10)
@@ -78,7 +78,7 @@ public struct CreateTransactionView: View {
         .padding()
         .navigationTitle("Create Transaction")
         .onReceive(
-            Publishers.CombineLatest(Just(amountToBuy), Just(selectedOffer.price))
+            Publishers.CombineLatest(Just(amountToBuy), Just(selectedOffer.pricePerUnit))
         ) { amountStr, price in
             let decimalSeparator = Locale.current.decimalSeparator ?? "."
 

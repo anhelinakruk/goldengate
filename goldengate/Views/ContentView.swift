@@ -12,7 +12,7 @@ struct ContentView: View {
             }
 
             Tab("Account", systemImage: "person.crop.circle", value: 1) {
-                AppKitButton()
+                AccountView()
                     .ignoresSafeArea(.all)
             }
 

@@ -21,15 +21,6 @@ struct goldengateApp: App {
                 } message: {
                     Text(viewModel.alertMessage)
                 }
-                .onReceive(AppKit.instance.sessionResponsePublisher) {
-                    response in
-                    switch response.result {
-                    case let .response(value):
-                        viewModel.alertMessage = "\(value)"
-                    case let .error(error):
-                        viewModel.alertMessage = "\(error)"
-                    }
-                }
         }
     }
 }
