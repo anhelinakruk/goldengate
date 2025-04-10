@@ -63,3 +63,9 @@ struct confirmDepositResponse: Decodable {
     let id: String
     var balance: Int
 }
+
+
+struct withdrawRequest: Codable {
+    var amount: Int
+    var address: String
+}

@@ -171,7 +171,7 @@ public struct CreateTransactionView: View {
     }
     
     func createTransactionRequest(transaction: TransactionRequest, completion: @escaping (Result<Bool, Error>) -> Void) {
-        guard let url = URL(string: "http://localhost:3000/private/transactions") else {
+        guard let url = URL(string: "http://192.168.1.101:3000/private/transactions") else {
             completion(.failure(NSError(domain: "Invalid URL", code: 400, userInfo: nil)))
             return
         }
@@ -203,7 +203,7 @@ public struct CreateTransactionView: View {
     }
     
     func getAggregatedFeeRequest(request: AggregatedFeeRequest, completion: @escaping (Result<AggregatedFeeResponse, Error>) -> Void) {
-        guard let url = URL(string: "http://localhost:3000/private/fee") else {
+        guard let url = URL(string: "http://192.168.1.101:3000/private/fee") else {
             completion(.failure(NSError(domain: "Invalid URL", code: 400, userInfo: nil)))
             return
         }

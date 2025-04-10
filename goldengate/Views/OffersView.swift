@@ -98,7 +98,7 @@ public struct OffersView: View {
     }
     
     func fetchOffers() {
-        guard let url = URL(string: "http://localhost:3000/public/offers") else {
+        guard let url = URL(string: "http://192.168.1.101:3000/public/offers") else {
             print("Invalid URL")
             return
         }
