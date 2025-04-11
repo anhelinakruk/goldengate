@@ -42,21 +42,24 @@ class RevolutViewController: UIViewController, WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard let currentURL = webView.url else { return }
         print("Finished loading URL: \(currentURL)")
+
+        // Extract and send cookies after the page has finished loading
         extractCookies { [weak self] cookies in
             self?.sendRequestWithCookies(cookies)
         }
     }
 
     // MARK: - Handle Cookies and Request
-    private func extractCookies(completion: @escaping ([String: HTTPCookie]) -> Void) {
+    private func extractCookies(completion: @escaping ([String: [HTTPCookie]]) -> Void) {
         let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
         cookieStore.getAllCookies { cookies in
-            let cookieMap = Dictionary(uniqueKeysWithValues: cookies.map { ($0.name, $0) })
+            // Group cookies by their name to handle duplicates
+            let cookieMap = Dictionary(grouping: cookies, by: { $0.name })
             completion(cookieMap)
         }
     }
 
-    private func sendRequestWithCookies(_ cookieMap: [String: HTTPCookie]) {
+    private func sendRequestWithCookies(_ cookieMap: [String: [HTTPCookie]]) {
         guard let url = URL(string: transactionUrl) else {
             print("Invalid transaction URL")
             return
@@ -65,8 +68,8 @@ class RevolutViewController: UIViewController, WKNavigationDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         
-        // Add cookies to header
-        if let deviceIdCookie = cookieMap["revo_device_id"] {
+        // Add cookies to header (using the first cookie in case of duplicates)
+        if let deviceIdCookie = cookieMap["revo_device_id"]?.first {
             request.setValue(deviceIdCookie.value, forHTTPHeaderField: "x-device-id")
         }
 
@@ -81,9 +84,12 @@ class RevolutViewController: UIViewController, WKNavigationDelegate {
         performNetworkRequest(with: request)
     }
 
-    private func createCookieHeader(from cookies: [String: HTTPCookie]) -> String {
-        return cookies.map { "\($0.key)=\($0.value.value)" }.joined(separator: "; ")
+    // Create the cookie header by joining cookies into a single string
+    private func createCookieHeader(from cookies: [String: [HTTPCookie]]) -> String {
+        return cookies.flatMap { $0.value.map { "\($0.name)=\($0.value)" } }
+                      .joined(separator: "; ")
     }
+
 
     // MARK: - Network Request
     private func performNetworkRequest(with request: URLRequest) {

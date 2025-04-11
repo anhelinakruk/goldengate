@@ -13,10 +13,13 @@ struct AccountView: View {
     @State private var withdrawAddress: String = ""
     @State private var chainID = ""
     @State private var messageSigned = false
-    @State private var errorMessage = ""
-    @State private var showError = false
+    
+    @State private var alertMessage = ""
+    @State private var showAlert = false
     
     @State private var balance: Double = 0.0
+    
+    @State private var depositAddress = ""
     
     @FocusState private var focusedField: Field?
     enum Field {
@@ -38,7 +41,7 @@ struct AccountView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 10) {
                     
                     // MARK: - Metamask Info Section
                     VStack(spacing: 10) {
@@ -47,7 +50,6 @@ struct AccountView: View {
                         infoRow(label: "Account", value: shortenAddress(metaMaskSDK.account))
                         infoRow(label: "Balance", value: "\(balance)")
                         infoRow(label: "Message Signed", value: messageSigned.description)
-                        infoRow(label: "Error:", value: errorMessage)
                     }
                     .padding()
                     .background(Color(.systemGroupedBackground))
@@ -56,95 +58,115 @@ struct AccountView: View {
                     .padding(.horizontal)
 
                     // MARK: - Buttons
-                    VStack(spacing: 12) {
-                        Button {
-                            Task {
-                                await connectMetamask()
-                            }
-                        } label: {
-                            Text("Connect Metamask")
-                                .frame(maxWidth: .infinity, maxHeight: 32)
-                        }
-
-                        Button {
-                            Task {
-                                await disconnectSDK()
-                            }
-                        } label: {
-                            Text("Disconnect")
-                                .frame(maxWidth: .infinity, maxHeight: 32)
-                        }
-
-                        Button {
-                            Task {
-                                let currentDate = Date()
-                                let isoFormatter = ISO8601DateFormatter()
-                                
-                                do {
-                                    let fetchedNonce = try await getNonce()
-                                    print("Received nonce: \(fetchedNonce)")
-                                
-                                    let siweMessage = SIWEMessage(
-                                        address: metaMaskSDK.account,
-                                        uri: appURL,
-                                        version: 1,
-                                        chainId: 1,
-                                        nonce: fetchedNonce,
-                                        issuedAt: isoFormatter.string(from: currentDate)
-                                    )
-                                    
-                                    await signMessage(message: siweMessage, address: metaMaskSDK.account)
-                                } catch {
-                                    self.errorMessage = "Error fetching nonce: \(error.localizedDescription)"
+                    HStack(spacing: 12) {
+                        if status ==  "Offline" {
+                            Button {
+                                Task {
+                                    await connectMetamask()
                                 }
+                            } label: {
+                                Text("Connect Metamask")
                             }
-                        } label: {
-                            Text("Sign Message")
-                                .frame(maxWidth: .infinity, maxHeight: 32)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .foregroundColor(.white)
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
+                        } else {
+                            Button {
+                                Task {
+                                    let currentDate = Date()
+                                    let isoFormatter = ISO8601DateFormatter()
+                                    
+                                    do {
+                                        let fetchedNonce = try await getNonce()
+                                        print("Received nonce: \(fetchedNonce)")
+                                        
+                                        let siweMessage = SIWEMessage(
+                                            address: metaMaskSDK.account,
+                                            uri: appURL,
+                                            version: 1,
+                                            chainId: 1,
+                                            nonce: fetchedNonce,
+                                            issuedAt: isoFormatter.string(from: currentDate)
+                                        )
+                                        
+                                        await signMessage(message: siweMessage, address: metaMaskSDK.account)
+                                    } catch {
+                                        self.alertMessage = "Error fetching nonce: \(error.localizedDescription)"
+                                        self.showAlert = true
+                                    }
+                                }
+                            } label: {
+                                Text("Sign Message")
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .foregroundColor(.white)
+                            .background(Color.green)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
+                            Button {
+                                Task {
+                                    await disconnectSDK()
+                                }
+                            } label: {
+                                Text("Disconnect")
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .foregroundColor(.white)
+                            .background(Color.red)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
                         }
                     }
                     .padding(.horizontal)
 
                     // MARK: - Deposit Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Enter amount to deposit:")
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            Spacer()
-                        }
-
-                        TextField("Enter amount", text: $depositAmount)
-                            .numbersOnly($depositAmount, maxDecimalPlaces: 6)
-                            .padding(10)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                            .shadow(radius: 3)
-                            .focused($focusedField, equals: .depositAmount)
-
-                        Button {
-                            Task {
-                                await deposit(amount: $depositAmount.wrappedValue, address: metaMaskSDK.account)
+                    if messageSigned {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Enter amount to deposit:")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                Spacer()
                             }
-                        } label: {
-                            Text("Deposit")
-                                .frame(maxWidth: .infinity, maxHeight: 32)
+                            
+                            TextField("Enter amount", text: $depositAmount)
+                                .numbersOnly($depositAmount, maxDecimalPlaces: 6)
+                                .padding(10)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(8)
+                                .shadow(radius: 3)
+                                .focused($focusedField, equals: .depositAmount)
+                            
+                            Button {
+                                Task {
+                                    await deposit(amount: $depositAmount.wrappedValue, address: metaMaskSDK.account)
+                                }
+                            } label: {
+                                Text("Deposit")
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .foregroundColor(.white)
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
                         }
-                    }
-                    .padding()
-                    .background(Color(.systemGroupedBackground))
-                    .cornerRadius(12)
-                    .shadow(radius: 2)
-                    .padding(.horizontal)
-
-                    Spacer()
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Enter amount to withdraw:")
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            Spacer()
+                        .padding()
+                        .background(Color(.systemGroupedBackground))
+                        .cornerRadius(12)
+                        .shadow(radius: 2)
+                        .padding(.horizontal)
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Enter amount to withdraw:")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                Spacer()
+                            }
                             TextField("Enter amount", text: $withdrawAmount)
                                 .numbersOnly($depositAmount, maxDecimalPlaces: 6)
                                 .padding(10)
@@ -152,44 +174,47 @@ struct AccountView: View {
                                 .cornerRadius(8)
                                 .shadow(radius: 3)
                                 .focused($focusedField, equals: .withdrawAmount)
-                        }
-                        
-                        HStack {
-                            Text("Address to withdraw:")
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            Spacer()
+                            
+                            HStack {
+                                Text("Address to withdraw:")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                Spacer()
+                            }
                             TextField("Enter adress '0x...'", text: $withdrawAddress)
                                 .padding(10)
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(8)
                                 .shadow(radius: 3)
                                 .focused($focusedField, equals: .withdrawAddress)
-                        }
-
-
-                        Button {
-                            Task {
-                                await withdraw(amount: $withdrawAmount.wrappedValue, address: $withdrawAddress.wrappedValue)
+                            
+                            
+                            Button {
+                                Task {
+                                    await withdraw(amount: $withdrawAmount.wrappedValue, address: $withdrawAddress.wrappedValue)
+                                }
+                            } label: {
+                                Text("Withdraw")
                             }
-                        } label: {
-                            Text("Withdraw")
-                                .frame(maxWidth: .infinity, maxHeight: 32)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .foregroundColor(.white)
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
                         }
+                        .padding()
+                        .background(Color(.systemGroupedBackground))
+                        .cornerRadius(12)
+                        .shadow(radius: 2)
+                        .padding(.horizontal)
                     }
-                    .padding()
-                    .background(Color(.systemGroupedBackground))
-                    .cornerRadius(12)
-                    .shadow(radius: 2)
-                    .padding(.horizontal)
-
                 }
             }
-            .navigationTitle("Metamask")
-            .alert(isPresented: $showError) {
+            .navigationTitle("Your account")
+            .alert(isPresented: $showAlert) {
                 Alert(
-                    title: Text("Error"),
-                    message: Text(errorMessage)
+                    title: Text("Alert"),
+                    message: Text(alertMessage)
                 )
             }
             .toolbar {
@@ -204,6 +229,24 @@ struct AccountView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            if !metaMaskSDK.account.isEmpty {
+                self.status = "Connected"
+                if messageSigned {
+                    self.status = "Signed"
+                }
+            } else {
+                metaMaskSDK.clearSession()
+            }
+            
+            Task {
+                    if let fetchedBalance = await getBalance() {
+                        self.balance = fetchedBalance
+                    } else {
+                        self.balance = 0.0
+                    }
+                }
         }
     }
 
@@ -221,13 +264,30 @@ struct AccountView: View {
 
     func deposit(amount: String, address: String) async {
         print("Depositing amount: \(amount) to \(address)")
-        
-        guard let amountDouble = Double(amount.replacingOccurrences(of: ",", with: "."))  else {
-            self.errorMessage = "Failed to parse amount to double"
+
+        guard let depositAddress = await requestAddressToDeposit() else {
+            self.alertMessage = "Failed to get contract address"
+            self.showAlert = true
+            return
+        }
+
+        if depositAddress.isEmpty {
             return
         }
         
-        let encodedCallData = encodeCallData(to: "0xD48592C606533078CB37Eee94f9471f68cfBefE2", value: amountDouble)
+        guard let amountDouble = Double(amount.replacingOccurrences(of: ",", with: "."))  else {
+            self.alertMessage = "Please, provide correct amount"
+            self.showAlert = true
+            return
+        }
+        
+        if amountDouble <= 0 {
+            self.alertMessage = "Amount must be greater than 0"
+            self.showAlert = true
+            return
+        }
+        
+        let encodedCallData = encodeCallData(to: depositAddress, value: amountDouble)
         print("Encoded data: \(encodedCallData)")
         
         let transaction = Transaction(
@@ -261,7 +321,8 @@ struct AccountView: View {
     
     func confirmDeposit(txhash: String, amount: Int) {
         guard let url = URL(string: "http://192.168.1.101:3000/private/deposit") else {
-            self.errorMessage = "Invalid URL"
+            self.alertMessage = "Invalid URL"
+            self.showAlert = true
             return
         }
         
@@ -280,39 +341,23 @@ struct AccountView: View {
             let data = try encoder.encode(deposit)
             request.httpBody = data
             
-            let config = URLSessionConfiguration.default
-                    config.timeoutIntervalForRequest = 200.0
-                    config.timeoutIntervalForResource = 250.0
-
-                    let session = URLSession(configuration: config)
-            
-            session.dataTask(with: request) { data, response, error in
+            URLSession.shared.dataTask(with: request) { _, response, error in
                 if let error = error {
-                    self.errorMessage = error.localizedDescription
-                    return
-                }
-                
-                guard let data = data else {
-                    print("No data received")
+                    self.alertMessage = error.localizedDescription
+                    self.showAlert = true
                     return
                 }
                 
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                     print("Deposit succesfull")
-                    do {
-                        let decoder = JSONDecoder()
-                        let depositResponse = try decoder.decode(confirmDepositResponse.self, from: data)
-                            
-                        balance = Double(depositResponse.balance) / pow(10, 6)
-                    } catch {
-                        print("Error decoding response: \(error.localizedDescription)")
-                    }
                 } else {
-                    self.errorMessage = "Failed to deposit"
+                    self.alertMessage = "Failed to deposit"
+                    self.showAlert = true
                 }
             }.resume()
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.alertMessage = error.localizedDescription
+            self.showAlert = true
         }
         
     }
@@ -326,14 +371,15 @@ struct AccountView: View {
         print("connect Result: \(connect)")
         
         switch connect {
-        case let .success(value):
+        case .success(_):
             print("Sign a message")
             status = "Connected"
-            errorMessage = ""
+            alertMessage = "Succesfully signed"
+            showAlert = true
         case let .failure(error):
             print("Hmm")
-            errorMessage = error.localizedDescription
-            showError = true
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
     }
     
@@ -359,15 +405,13 @@ Issued At: \(message.issuedAt)
             print("signature: \(signature)")
             do {
                 try await sendMessageToServer(message: siweString, signature: signature, address: address)
-                status = "Signed"
-                messageSigned = true
             } catch {
-                self.errorMessage = error.localizedDescription
-                showError = true
+                self.alertMessage = error.localizedDescription
+                showAlert = true
             }
         case let .failure(error):
-            errorMessage = error.localizedDescription
-            showError = true
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
         
     }
@@ -389,7 +433,8 @@ Issued At: \(message.issuedAt)
     
     public func sendMessageToServer(message: String, signature: String, address: String) async throws {
         guard let url = URL(string: "http://192.168.1.101:3000/auth") else {
-            self.errorMessage = "Invalid URL"
+            self.alertMessage = "Invalid URL"
+            self.showAlert = true
             return
         }
         
@@ -416,38 +461,23 @@ Issued At: \(message.issuedAt)
                         let responseObject = try decoder.decode(ResponseMessage.self, from: data)
                         print("Token: \(responseObject.access_token)")
                         
+                        status = "Signed"
+                        messageSigned = true
+                        
                     } catch {
-                        self.errorMessage = "Error decoding response: \(error.localizedDescription)"
+                        self.alertMessage = "Error decoding response: \(error.localizedDescription)"
+                        self.showAlert = true
+                        messageSigned = false
                     }
                 }
             } else {
-                self.errorMessage = "Failed to send message"
+                self.alertMessage = "Message not verified"
+                self.showAlert = true
             }
         } catch {
-                self.errorMessage = "Error: \(error.localizedDescription)"
+                self.alertMessage = "Error: \(error.localizedDescription)"
+                self.showAlert = true
         }
-    }
-    
-    func sendRequest(to urlString: String, completion: @escaping (String) -> Void) {
-        guard let url = URL(string: urlString) else {
-            completion("Invalid URL")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(error.localizedDescription)
-            }
-            
-            if let data = data, let responseString = String(data: data, encoding: .utf8) {
-                completion(responseString)
-            } else {
-                completion("No Data recieved")
-            }
-        }.resume()
     }
     
     func getNonce() async throws -> String {
@@ -496,16 +526,18 @@ Issued At: \(message.issuedAt)
         return transactionData
     }
     
-    func withdraw(amount: String, address: String) {
+    func withdraw(amount: String, address: String) async {
         guard let url = URL(string: "http://192.168.1.101:3000/private/withdraw") else {
-            self.errorMessage = "Invalid URL"
+            self.alertMessage = "Invalid URL"
+            self.showAlert = true
             return
         }
         
         print("Withdrawwing")
         
         guard let amountDouble = Double(amount) else {
-            self.errorMessage = "Invalid amount"
+            self.alertMessage = "Invalid amount"
+            self.showAlert = true
             return
         }
         
@@ -524,39 +556,72 @@ Issued At: \(message.issuedAt)
             let data = try encoder.encode(withdraw)
             request.httpBody = data
             
-            let config = URLSessionConfiguration.default
-                    config.timeoutIntervalForRequest = 200.0
-                    config.timeoutIntervalForResource = 250.0
-
-                    let session = URLSession(configuration: config)
-            
-            session.dataTask(with: request) { data, response, error in
+            URLSession.shared.dataTask(with: request) { _, response, error in
                 if let error = error {
-                    self.errorMessage = error.localizedDescription
-                    return
-                }
-                
-                guard let data = data else {
-                    print("No data received")
+                    self.alertMessage = error.localizedDescription
+                    self.showAlert = true
                     return
                 }
                 
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                     print("Withdraw succesfull")
-                    do {
-                        let decoder = JSONDecoder()
-                        let depositResponse = try decoder.decode(confirmDepositResponse.self, from: data)
-                            
-                        balance = Double(depositResponse.balance) / pow(10, 6)
-                    } catch {
-                        print("Error decoding response: \(error.localizedDescription)")
-                    }
                 } else {
-                    self.errorMessage = "Failed to withdraw"
+                    self.alertMessage = "Failed to withdraw"
+                    self.showAlert = true
                 }
             }.resume()
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.alertMessage = error.localizedDescription
+            
+        }
+    }
+    
+    
+    func requestAddressToDeposit() async -> String? {
+        print("Requesting address to deposit")
+        guard let url = URL(string: "http://192.168.1.101:3000/public/address") else {
+            print("Invalid URL")
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let decoder = JSONDecoder()
+            let addressResponse = try decoder.decode(depositAddressResponse.self, from: data)
+            
+            let depositAddress = addressResponse.address
+            print("Deposit Address: \(depositAddress)")
+            return depositAddress
+        } catch {
+            print("Error requesting deposit address: \(error)")
+            return nil
+        }
+    }
+    
+    func getBalance() async -> Double? {
+        print("Requesting balance")
+        guard let url = URL(string: "http://192.168.1.101:3000/private/balance") else {
+            print("Invalid URL")
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let decoder = JSONDecoder()
+            let balanceResponce = try decoder.decode(BalanceResponse.self, from: data)
+            
+            return Double(balanceResponce.balance) / pow(10, 6)
+        } catch {
+            print("Error requesting user balance: \(error)")
+            return nil
         }
     }
     
