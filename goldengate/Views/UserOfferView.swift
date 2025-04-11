@@ -1,19 +1,14 @@
 import SwiftUI
 
-public struct OffersView: View {
+public struct UserOfferView: View {
     @State private var offers: [Offer] = []
-    @State private var selectedOffer: Offer? = nil
     @State private var selectedOfferType: String = "Buy"
     @State private var selectedCrypto: String = "USDT"
     
-    @State private var takerFeeRate = 0.5
-    @State private var amountAvailable = 0.0
+    let cryptoOptions = ["USDT"]
     
     @State private var showAlert: Bool = false
-    @State private var showTransactionLink: Bool = false
-    @State private var showCreateOfferLink: Bool = false
-    
-    let cryptoOptions = ["USDT"]
+    @State private var alertMessage: String = ""
     
     @EnvironmentObject var userModel: UserModel
     
@@ -44,7 +39,10 @@ public struct OffersView: View {
                 .padding(.horizontal)
                 
                 ScrollView {
-                    let filteredOffers = offers.filter { $0.offerType == selectedOfferType && $0.cryptoCurrency == selectedCrypto }
+                    let filteredOffers = offers.filter {
+                        $0.offerType == selectedOfferType &&
+                        $0.cryptoCurrency == selectedCrypto
+                    }
                     
                     if filteredOffers.isEmpty {
                         GeometryReader { geometry in
@@ -54,7 +52,7 @@ public struct OffersView: View {
                                 .multilineTextAlignment(.center)
                                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
                         }
-                        .frame(minHeight: 500)
+                        .frame(minHeight: 300)
                     } else {
                         VStack(spacing: 12) {
                             ForEach(filteredOffers) { offer in
@@ -70,22 +68,25 @@ public struct OffersView: View {
                                     HStack {
                                         Text("Available:")
                                             .fontWeight(.bold)
-                                        Text("\(amountAvailable, specifier: "%.6f") \(offer.cryptoCurrency)")
+                                        Text("\(offer.amount) \(offer.cryptoCurrency)")
                                             .foregroundColor(.black)
                                         Spacer()
-                                        
-                                        Button {
-                                            if userModel.status == "Signed" {
-                                                selectedOffer = offer
-                                                showTransactionLink = true
-                                            } else {
-                                                showAlert = true
+                                        Button(action: {
+                                            Task {
+                                                await closeOfferRequest(offer: offer) { result in
+                                                    switch result {
+                                                    case .success(_):
+                                                        print("Offer Closed Successfully!")
+                                                    case .failure(let error):
+                                                        print("Failed to close offer: \(error.localizedDescription)")
+                                                    }
+                                                }
                                             }
-                                        } label: {
-                                            Text("Take Offer")
-                                                .padding(.all, 10)
+                                        }) {
+                                            Text("Delete offer")
+                                                .padding(10)
                                                 .font(.footnote)
-                                                .background(Color.blue)
+                                                .background(Color.red)
                                                 .foregroundColor(.white)
                                                 .cornerRadius(8)
                                         }
@@ -104,63 +105,92 @@ public struct OffersView: View {
                 
                 Spacer()
                 
-                Button {
-                    if userModel.status == "Signed" {
-                        showCreateOfferLink = true
-                    } else {
-                        showAlert = true
+
+                if userModel.status == "Signed" {
+                    NavigationLink(destination: CreateOfferView().environmentObject(userModel)) {
+                        Text("Create Offer")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .font(.title3)
+                            .cornerRadius(8)
+                            .padding(.horizontal)
                     }
-                } label: {
-                    Text("Create Offer")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .font(.title3)
-                        .cornerRadius(8)
-                        .padding(.horizontal)
+                    .padding(.bottom)
+                } else {
+                    Button {
+                        alertMessage = "You need to sign your message to create an offer."
+                        showAlert = true
+                    } label: {
+                        Text("Create Offer")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray.opacity(0.5))
+                            .foregroundColor(.white)
+                            .font(.title3)
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                    }
+                    .padding(.bottom)
                 }
-                .padding(.bottom)
             }
-            .navigationBarTitle("Offers")
+            .navigationBarTitle("Your offers")
+            .navigationBarTitleDisplayMode(.inline)
             .background(Color.gray.opacity(0.1))
             .onAppear {
-                fetchOffers()
+                fetchUserOffers()
             }
-            .background(
-                Group {
-                    NavigationLink(destination: Group {
-                        if let offer = selectedOffer {
-                            CreateTransactionView(selectedOffer: offer)
-                                .environmentObject(userModel)
-                        } else {
-                            EmptyView()
-                        }
-                    }, isActive: $showTransactionLink) {
-                        EmptyView()
-                    }
-                    .hidden()
-                    
-                    NavigationLink(destination: CreateOfferView().environmentObject(userModel), isActive: $showCreateOfferLink) {
-                        EmptyView()
-                    }
-                    .hidden()
-                }
-            )
-            .alert("Warning", isPresented: $showAlert, actions: {
-                Button("OK", role: .cancel) { }
-            }, message: {
-                Text("You need to sign your message before performing this action.")
-            })
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text("Warning"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            }
         }
     }
     
-    func fetchOffers() {
-        guard let url = URL(string: "http://192.168.1.101:3000/public/offers") else {
+    func closeOfferRequest(offer: Offer, completion: @escaping (Result<Bool, Error>) -> Void) async {
+        print("Closing offer: \(offer.id)")
+        guard let url = URL(string: "http://192.168.1.101:3000/private/user/offers/\(offer.id)") else {
+            print("Invalid URL")
+            completion(.failure(NSError(domain: "InvalidURL", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+            
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error deleting offer: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 204 {
+                    print("Offer \(offer.id) deleted successfully.")
+                    DispatchQueue.main.async {
+                        self.offers.removeAll { $0.id == offer.id }
+                        completion(.success(true))
+                    }
+                } else {
+                    let error = NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Failed to delete offer. Status code: \(httpResponse.statusCode)"])
+                    print("Failed to delete offer. Status code: \(httpResponse.statusCode)")
+                    completion(.failure(error))
+                }
+            } else {
+                let error = NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+        
+    func fetchUserOffers() {
+        guard let url = URL(string: "http://192.168.1.101:3000/private/user/offers") else {
             print("Invalid URL")
             return
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -195,7 +225,6 @@ public struct OffersView: View {
                         revTag: responseOffer.revTag
                     )
                     
-                    amountAvailable = (offer.amount - (offer.amount * (takerFeeRate/100))).rounded(toPlaces: 6, rule: .down)
                     return offer
                 }
 
@@ -209,19 +238,6 @@ public struct OffersView: View {
     }
 }
 
-struct Offer: Identifiable {
-    let id: String
-    var offerType: String
-    var pricePerUnit: Double
-    var currency: String
-    var amount: Double
-    var cryptoCurrency: String
-    var fee: Double
-    var status: String
-    var value: Double
-    var revTag: String
-}
-
 #Preview {
-    OffersView()
+    UserOfferView()
 }

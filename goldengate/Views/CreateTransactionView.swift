@@ -13,6 +13,8 @@ public struct CreateTransactionView: View {
     @State private var takerFeeRate: Double = 0.5
     @State private var takerFee: Double = 0.0
     
+    @EnvironmentObject var userModel: UserModel
+    
     public var body: some View {
         VStack {
             HStack {

@@ -19,14 +19,16 @@ public struct CreateOfferView: View {
     
     @FocusState private var focusedField: Field?
     enum Field {
-            case cryptoAmount
-            case pricePerUnit
-            case revTag
-        }
+        case cryptoAmount
+        case pricePerUnit
+        case revTag
+    }
     
-    let cryptoOptions = ["USDT",]
+    let cryptoOptions = ["USDT"]
     let currencyOptions = ["PLN", "USD", "EUR"]
     let offerTypes = ["Buy", "Sell"]
+    
+    @EnvironmentObject var userModel: UserModel
     
     public var body: some View {
         ScrollView {
@@ -68,19 +70,30 @@ public struct CreateOfferView: View {
                     .shadow(radius: 3)
                 }
                 .padding(.bottom, 15)
-                
-                HStack {
-                    Text("Amount:")
-                        .fontWeight(.bold)
-                        .foregroundColor(.black)
-                    Spacer()
-                    TextField("Enter amount", text: $cryptoAmount)
-                        .numbersOnly($cryptoAmount, maxDecimalPlaces: 6)
-                        .padding(10)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
-                        .shadow(radius: 3)
-                        .focused($focusedField, equals: .cryptoAmount)
+
+                VStack(spacing: 2) {
+                    HStack {
+                        Text("Amount:")
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                        Spacer()
+                        TextField("Enter amount", text: $cryptoAmount)
+                            .numbersOnly($cryptoAmount, maxDecimalPlaces: 6)
+                            .padding(10)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                            .shadow(radius: 3)
+                            .focused($focusedField, equals: .cryptoAmount)
+                    }
+                    
+                    if calculatedValue > userModel.balance && !cryptoAmount.isEmpty {
+                        HStack {
+                            Text("You don't have enough amount")
+                                .foregroundColor(.red)
+                                .font(.footnote)
+                            Spacer()
+                        }
+                    }
                 }
                 .padding(.bottom, 15)
                 
@@ -147,7 +160,7 @@ public struct CreateOfferView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                     Spacer()
-                    Text("\(calculatedValue, specifier: "%.6f") \(selectedCryptoType)")
+                    Text("\(calculatedValue) \(selectedCryptoType)")
                         .foregroundColor(.black)
                 }
                 .padding(.bottom, 15)
@@ -157,45 +170,54 @@ public struct CreateOfferView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                     Spacer()
-                    Text("\(calculatedPrice, specifier: "%.2f") \(selectedCurrency)")
+                    Text("\(calculatedPrice) \(selectedCurrency)")
                         .foregroundColor(.black)
                 }
                 .padding(.bottom, 15)
                 
                 Button(action: {
-                    if cryptoAmount.isEmpty || pricePerUnit.isEmpty {
+                    if cryptoAmount.isEmpty || pricePerUnit.isEmpty || revTag.isEmpty {
                         alertMessage = "Please fill in both Amount and Price per unit."
                         showAlert = true
-                    } else {
-                        guard let amount = Double(cryptoAmount.replacingOccurrences(of: ",", with: ".")) else {
-                                    alertMessage = "Please enter a valid amount."
-                                    showAlert = true
-                                    return
-                                }
-                                
-                        guard let price = Double(pricePerUnit.replacingOccurrences(of: ",", with: ".")) else {
-                            alertMessage = "Please enter a valid price per unit."
-                            showAlert = true
-                            return
-                        }
-                        
-                        let amountToSend = Int(amount * pow(10, 6))
-                        let priceToSend = Int(price * pow(10, 2))
-                        let value = Int(calculatedValue * pow(10, 6))
-                        let fee = Int(makerFee * pow(10, 6))
-                        
-                        let offer = OfferRequest(
-                            offerType: selectedOfferType,
-                            amount: amountToSend,
-                            fee: fee,
-                            cryptoType: selectedCryptoType,
-                            currency: selectedCurrency,
-                            pricePerUnit: priceToSend,
-                            value: value,
-                            revTag: revTag
-                        )
-
-                        createOfferRequest(offer: offer) { result in
+                        return
+                    }
+                    
+                    guard let amount = Double(cryptoAmount.replacingOccurrences(of: ",", with: ".")) else {
+                        alertMessage = "Please enter a valid amount."
+                        showAlert = true
+                        return
+                    }
+                    
+                    guard let price = Double(pricePerUnit.replacingOccurrences(of: ",", with: ".")) else {
+                        alertMessage = "Please enter a valid price per unit."
+                        showAlert = true
+                        return
+                    }
+                    
+                    if calculatedValue > userModel.balance {
+                        alertMessage = "Insufficient funds. You don't have enough balance."
+                        showAlert = true
+                        return
+                    }
+                    
+                    let amountToSend = Int(amount * pow(10, 6))
+                    let priceToSend = Int(price * pow(10, 2))
+                    let value = Int(calculatedValue * pow(10, 6))
+                    let fee = Int(makerFee * pow(10, 6))
+                    
+                    let offer = OfferRequest(
+                        offerType: selectedOfferType,
+                        amount: amountToSend,
+                        fee: fee,
+                        cryptoType: selectedCryptoType,
+                        currency: selectedCurrency,
+                        pricePerUnit: priceToSend,
+                        value: value,
+                        revTag: revTag
+                    )
+                    
+                    Task {
+                        await createOfferRequest(offer: offer) { result in
                             switch result {
                             case .success(_):
                                 print("Offer Created Successfully!")
@@ -220,21 +242,21 @@ public struct CreateOfferView: View {
             .padding()
             .navigationTitle("Create Offer")
             .alert(isPresented: $showAlert) {
-                Alert(title: Text("Missing Information"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                Alert(title: Text("Warning"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
             .onReceive(
                 Publishers.CombineLatest(Just(cryptoAmount), Just(pricePerUnit))
             ) { amountStr, priceStr in
                 let decimalSeparator = Locale.current.decimalSeparator ?? "."
-
+                
                 let amount = Double(amountStr
                     .replacingOccurrences(of: ",", with: ".")
                     .replacingOccurrences(of: decimalSeparator, with: ".")) ?? 0
-
+                
                 let price = Double(priceStr
                     .replacingOccurrences(of: ",", with: ".")
                     .replacingOccurrences(of: decimalSeparator, with: ".")) ?? 0
-
+                
                 calculatedPrice = amount * price
                 calculatedValue = (amount * (1 + makerFeeRate / 100)).rounded(toPlaces: 6, rule: .up)
                 let fee = (amount * (makerFeeRate / 100)).rounded(toPlaces: 6, rule: .up)
@@ -258,12 +280,12 @@ public struct CreateOfferView: View {
         }
     }
     
-    func createOfferRequest(offer: OfferRequest, completion: @escaping (Result<Bool, Error>) -> Void) {
+    func createOfferRequest(offer: OfferRequest, completion: @escaping (Result<Bool, Error>) -> Void) async {
         guard let url = URL(string: "http://192.168.1.101:3000/private/offers") else {
             completion(.failure(NSError(domain: "Invalid URL", code: 400, userInfo: nil)))
             return
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -301,4 +323,3 @@ extension Double {
 #Preview {
     CreateOfferView()
 }
-

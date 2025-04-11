@@ -19,7 +19,7 @@ struct OfferRequest: Codable {
     var revTag: String
 }
 
-struct ResponseOffer: Codable {
+struct ResponseOffer: Decodable {
     let id: String
     var offerType: String
     var pricePerUnit: Int

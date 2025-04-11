@@ -17,9 +17,8 @@ struct AccountView: View {
     @State private var alertMessage = ""
     @State private var showAlert = false
     
-    @State private var balance: Double = 0.0
-    
     @State private var depositAddress = ""
+
     
     @FocusState private var focusedField: Field?
     enum Field {
@@ -36,30 +35,59 @@ struct AccountView: View {
         sdkOptions: nil
     )
     
-    @State private var status: String = "Offline"
-
+    @EnvironmentObject var userModel: UserModel
+    
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     
                     // MARK: - Metamask Info Section
-                    VStack(spacing: 10) {
-                        infoRow(label: "Status", value: status)
+                    VStack(spacing: 0) {
+                        infoRow(label: "Status", value: userModel.status)
+                        Divider()
                         infoRow(label: "Chain ID", value: metaMaskSDK.chainId)
+                        Divider()
                         infoRow(label: "Account", value: shortenAddress(metaMaskSDK.account))
-                        infoRow(label: "Balance", value: "\(balance)")
+                        Divider()
+                        infoRow(label: "Balance", value: "\(userModel.balance)")
+                        Divider()
                         infoRow(label: "Message Signed", value: messageSigned.description)
+                        Divider()
+                        
+                        if userModel.status == "Signed" {
+                            NavigationLink(destination: UserOfferView().environmentObject(userModel)) {
+                                HStack {
+                                    Text("View my offers")
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.gray)
+                                }
+                                .padding()
+                            }
+                        } else {
+                            Button {
+                                alertMessage = "You need to sign message to view your offers."
+                                showAlert = true
+                            } label: {
+                                HStack {
+                                    Text("View my offers")
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.gray)
+                                }
+                                .padding()
+                            }
+                        }
                     }
-                    .padding()
-                    .background(Color(.systemGroupedBackground))
-                    .cornerRadius(12)
-                    .shadow(radius: 2)
-                    .padding(.horizontal)
 
                     // MARK: - Buttons
                     HStack(spacing: 12) {
-                        if status ==  "Offline" {
+                        if userModel.status ==  "Offline" {
                             Button {
                                 Task {
                                     await connectMetamask()
@@ -230,11 +258,12 @@ struct AccountView: View {
                 }
             }
         }
+        .environmentObject(userModel)
         .onAppear {
             if !metaMaskSDK.account.isEmpty {
-                self.status = "Connected"
+                userModel.status = "Connected"
                 if messageSigned {
-                    self.status = "Signed"
+                    userModel.status = "Signed"
                 }
             } else {
                 metaMaskSDK.clearSession()
@@ -242,15 +271,14 @@ struct AccountView: View {
             
             Task {
                     if let fetchedBalance = await getBalance() {
-                        self.balance = fetchedBalance
+                        userModel.balance = fetchedBalance
                     } else {
-                        self.balance = 0.0
+                        userModel.balance = 0.0
                     }
                 }
         }
     }
 
-    // Helper View for info rows
     @ViewBuilder
     func infoRow(label: String, value: String) -> some View {
         HStack {
@@ -260,6 +288,7 @@ struct AccountView: View {
             Text(value)
                 .multilineTextAlignment(.trailing)
         }
+        .padding()
     }
 
     func deposit(amount: String, address: String) async {
@@ -373,7 +402,7 @@ struct AccountView: View {
         switch connect {
         case .success(_):
             print("Sign a message")
-            status = "Connected"
+            userModel.status = "Connected"
             alertMessage = "Succesfully signed"
             showAlert = true
         case let .failure(error):
@@ -427,7 +456,7 @@ Issued At: \(message.issuedAt)
             print("Disconnecting from MetaMask...")
             metaMaskSDK.clearSession()
             metaMaskSDK.terminateConnection()
-            status = "Offline"
+            userModel.status = "Offline"
         }
     
     
@@ -461,7 +490,7 @@ Issued At: \(message.issuedAt)
                         let responseObject = try decoder.decode(ResponseMessage.self, from: data)
                         print("Token: \(responseObject.access_token)")
                         
-                        status = "Signed"
+                        userModel.status = "Signed"
                         messageSigned = true
                         
                     } catch {
